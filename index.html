@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Loan Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Loan Calc">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f6fb;--card:#fff;--text:#14213d;--muted:#667085;--line:#e3e7ef;--accent:#2563eb;--accent-text:#fff;--soft:#eaf1ff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1424;--card:#171f35;--text:#eef2ff;--muted:#9aa6c4;--line:#27314d;--accent:#5b8cff;--accent-text:#0b1020;--soft:#1d2a4d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1424;--card:#171f35;--text:#eef2ff;--muted:#9aa6c4;--line:#27314d;--accent:#5b8cff;--accent-text:#0b1020;--soft:#1d2a4d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;padding:16px;max-width:480px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+label:first-child{margin-top:0}
+input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.r{background:var(--soft);border-radius:12px;padding:10px}
+.r small{display:block;font-size:11px;color:var(--muted)}
+.r b{font-size:17px;word-break:break-word}
+.r.big{grid-column:1/-1;background:var(--accent);color:var(--accent-text)}
+.r.big small{color:inherit;opacity:.8}
+.r.big b{font-size:26px}
+.note{font-size:12px;color:var(--muted);text-align:center;margin:6px 0 0}
+.err{color:#d92d20;font-size:13px;margin:8px 0 0}
+.hide{display:none}
+.r.wide{grid-column:1/-1}
+.deal{grid-column:1/-1;border-radius:12px;padding:12px;border:1px solid var(--line);transition:background .2s,color .2s}
+.deal small{display:block;font-size:11px;opacity:.8}
+.deal b{font-size:22px}
+.deal p{margin:4px 0 0;font-size:12px;opacity:.85}
+.deal.worse{background:#9b1c1c;color:#fff}
+.deal.bad{background:#e5484d;color:#fff}
+.deal.okay{background:#fff;color:#14213d}
+.deal.good{background:#86efac;color:#052e16}
+.deal{position:relative}
+.ib{position:absolute;top:8px;right:8px;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid currentColor;background:transparent;color:inherit;font:italic 600 11px/16px Georgia,serif;opacity:.7;cursor:pointer}
+.ib:hover{opacity:1}
+.tip{position:absolute;bottom:calc(100% + 6px);right:0;z-index:5;width:250px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:12px}
+.tip table{width:100%;border-collapse:collapse;margin-top:4px}
+.tip td,.tip th{padding:3px 0;text-align:left}
+.tip th{font-weight:600;color:var(--muted);font-size:11px}
+.tip .x{position:absolute;top:4px;right:6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px}
+.tip p{margin:6px 0 0;font-size:11px;color:var(--muted);opacity:1}
+.deal.great{background:#16a34a;color:#fff}
+.deal.maybe{background:#facc15;color:#3a2a00}
+.ap b{font-size:30px}
+.ap .m{font-size:16px;font-weight:700;margin-left:6px}
+.ap ul{margin:6px 0 0;padding-left:18px;font-size:12px;opacity:.9}
+.ap ul li{margin:2px 0}
+.hint{font-size:11px;color:var(--muted);margin:3px 0 0}
+.rst{width:100%;margin:12px 0 24px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
+</style>
+</head>
+<body>
+<h1>Loan Calculator</h1>
+<div class="card">
+  <label>Find</label>
+  <select id="mode">
+    <option value="emi">EMI amount</option>
+    <option value="months">Number of months</option>
+    <option value="dp">Down payment (DP)</option>
+  </select>
+  <label>Interest type</label>
+  <select id="type">
+    <option value="reducing">Reducing balance</option>
+    <option value="flat">Flat rate</option>
+  </select>
+  <label>Total price (₹)</label>
+  <input id="price" placeholder="e.g. 1,50,000" class="amt" type="text" inputmode="decimal" autocomplete="off">
+  <div id="g-dp"><label>Down payment (₹)</label><input id="dp" placeholder="e.g. 30,000" class="amt" type="text" inputmode="decimal" autocomplete="off"></div>
+  <label>Interest rate (% per year)</label>
+  <input id="rate" placeholder="e.g. 12" type="number" inputmode="decimal">
+  <div id="g-months"><label>Number of months</label><input id="months" placeholder="e.g. 24" type="number" inputmode="numeric"></div>
+  <div id="g-emi" class="hide"><label>EMI (₹)</label><input id="emi" placeholder="e.g. 5,000" class="amt" type="text" inputmode="decimal" autocomplete="off"></div>
+  <div id="err" class="err"></div>
+</div>
+<div class="card">
+  <div class="res">
+    <div class="r big"><small id="bigL">EMI per month</small><b id="bigV">₹4,992</b></div>
+    <div class="r"><small>Down payment</small><b id="oDp">₹50,000 (33.3%)</b></div>
+    <div class="r"><small>Loan amount</small><b id="oLoan">₹1,00,000</b></div>
+    <div class="r"><small>EMI</small><b id="oEmi">₹4,992</b></div>
+    <div class="r"><small>Months</small><b id="oMonths">24</b></div>
+    <div class="r"><small>Total interest</small><b id="oInt">₹19,818</b></div>
+    <div class="r"><small>Total payable</small><b id="oTot">₹1,19,818</b></div>
+    <div class="r wide"><small id="eqL">Equivalent rate</small><b id="eqV">9.91% flat rate</b></div>
+    <div id="deal" class="deal bad"><button type="button" class="ib" id="ib" aria-label="How the rating works" aria-expanded="false">i</button>
+      <div class="tip hide" id="tip" role="dialog"><button type="button" class="x" id="tipX" aria-label="Close">×</button>
+        <b style="font-size:12px">How the rating works</b>
+        <table><tbody><tr><th>Rating</th><th>Reducing</th><th>Flat*</th></tr></tbody><tbody id="tipB"></tbody></table>
+        <p>* Approx. flat rate equal to the reducing rate, for <span id="tipM">12</span> months. Flat rates are converted to reducing before rating.</p>
+      </div><small>Is this a good deal?</small><b id="dealV">Bad</b><p id="dealN">Effective rate 18.00% p.a. (reducing). Higher than usual. Compare other lenders.</p></div>
+  </div>
+</div>
+<div class="card">
+  <b style="font-size:15px">Check dealer's quote</b>
+  <p class="hint">Enter exactly what is printed on the dealer's paper.</p>
+  <label>On-road price (₹)</label><input id="qPrice" placeholder="e.g. 1,50,000" class="amt" type="text" inputmode="decimal" autocomplete="off">
+  <div class="row"><div><label>Down payment (₹)</label><input id="qDp" placeholder="e.g. 30,000" class="amt" type="text" inputmode="decimal" autocomplete="off"></div>
+  <div><label>EMI (₹)</label><input id="qEmi" placeholder="e.g. 5,000" class="amt" type="text" inputmode="decimal" autocomplete="off"></div></div>
+  <label>Number of months</label><input id="qM" placeholder="e.g. 36" type="number" inputmode="numeric">
+  <label>Rate the dealer claims (% per year, optional)</label><input id="qClaim" type="number" inputmode="decimal" placeholder="e.g. 9">
+  <div class="res" style="margin-top:12px">
+    <div class="r"><small>Loan amount</small><b id="qL">–</b></div>
+    <div class="r"><small>Total interest</small><b id="qI">–</b></div>
+    <div class="r"><small>Actual flat rate</small><b id="qF">–</b></div>
+    <div class="r"><small>Actual reducing rate</small><b id="qR">–</b></div>
+    <div class="r wide"><small>Total payable (loan + interest)</small><b id="qT">–</b></div>
+    <div id="qD" class="deal okay"><small>Is the dealer's quote good?</small><b id="qDv">–</b><p id="qDn"></p></div>
+  </div>
+  <p class="hint" id="qCl"></p>
+</div>
+<div class="card">
+  <b style="font-size:15px">Loan approval chances</b>
+  <label>Lender preset</label>
+  <select id="lender"></select>
+  <p class="hint" id="lInfo"></p>
+  <div class="row"><div><label>Your age (years)</label><input id="age" placeholder="e.g. 28" type="number" inputmode="numeric"></div>
+  <div><label>Lender minimum age (blank = preset)</label><input id="minAge" placeholder="Preset" type="number" inputmode="numeric"></div></div>
+  <div class="row"><div><label>Monthly income (₹)</label><input id="inc" placeholder="e.g. 30,000" class="amt" type="text" inputmode="decimal" autocomplete="off"></div>
+  <div><label>Existing EMIs (₹/month)</label><input id="oblig" placeholder="e.g. 0" class="amt" type="text" inputmode="decimal" autocomplete="off"></div></div>
+  <label>CIBIL score (300–900)</label><input id="cibil" placeholder="Leave empty if none" type="number" inputmode="numeric">
+  <p class="hint">Leave empty if you have no credit history (new to credit).</p>
+  <label>CIBIL age (credit history length)</label>
+  <div class="row"><input id="cY" type="number" inputmode="numeric" placeholder="Years" aria-label="Years"><input id="cM" type="number" inputmode="numeric" placeholder="Months" aria-label="Months"></div>
+  <div style="margin-top:12px" id="ap" class="deal ap good"><small>Approval chances</small><b id="apV">76%</b><span class="m" id="apM">Yes</span><p id="apN">FOIR 50% · LTV 67% · Estimate only, each lender has its own rules.</p><ul id="apL"><li>▲ Strong CIBIL score (784).</li><li>▼ Income is near the minimum many lenders accept.</li><li>▲ Good down payment (LTV 67%).</li><li>▼ Short credit history (thin file).</li></ul></div>
+  <div class="r wide" style="margin-top:10px"><small>Best chances for your profile</small><div id="bestV" style="font-size:15px;margin-top:4px">–</div><p class="hint" id="bestN"></p></div>
+</div>
+<div class="card">
+  <b style="font-size:15px">Pre-closure: close early or keep paying?</b>
+  <p class="hint">Uses the loan from the calculator at the top (loan, EMI, months, rate).</p>
+  <div class="row"><div><label>Pre-closure charge (%)</label><input id="pcP" placeholder="e.g. 4" type="number" inputmode="decimal"></div>
+  <div><label>GST on the charge (%)</label><input id="pcG" type="number" inputmode="decimal" value="18"></div></div>
+  <label>Pre-close after (months)</label><input id="pcM" placeholder="e.g. 12" type="number" inputmode="numeric">
+  <div class="row"><div><label>Return if you invest instead (% p.a.)</label><input id="pcR" placeholder="e.g. 7" type="number" inputmode="decimal"></div>
+  <div><label>Compare over (months)</label><input id="pcH" type="number" inputmode="numeric" placeholder="Until loan ends"></div></div>
+  <p class="hint">Investing: instead of paying off the loan, you keep that money invested and carry on paying EMIs. Leave months empty to compare until the loan ends. Set return to 0 to ignore investing.</p>
+  <div class="res" style="margin-top:12px">
+    <div class="r"><small>Outstanding loan then</small><b id="pcO">–</b></div>
+    <div class="r"><small>Charge incl. GST</small><b id="pcC">–</b></div>
+    <div class="r"><small>Interest if you keep paying</small><b id="pcK">–</b></div>
+    <div class="r"><small>Cost if you pre-close</small><b id="pcX">–</b></div>
+    <div class="r"><small>Pre-close: freed EMIs invested, value at end</small><b id="pcA">–</b></div>
+    <div class="r"><small>Keep paying: lump invested, value at end</small><b id="pcB">–</b></div>
+    <div id="pcD" class="deal okay"><small>Which is cheaper?</small><b id="pcDv">–</b><p id="pcDn"></p></div>
+  </div>
+  <p class="hint">Investment returns are only an assumption (not guaranteed, tax ignored). Charge is applied on the outstanding principal. For flat-rate loans, principal is assumed to be repaid equally each month; your lender's formula may differ, so confirm the exact foreclosure amount.</p>
+</div>
+<p class="note">Total payable = loan + interest (excludes DP and fees)</p>
+<button id="reset" type="button" class="rst">Reset all amounts</button>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const num=id=>parseFloat($(id).value.replace(/,/g,''))||0;
+// Indian digit grouping for amount fields: 1,00,000 / 10,00,000
+function inGroup(s){
+  s=s.replace(/[^\d.]/g,'');const k=s.indexOf('.');
+  let a=k<0?s:s.slice(0,k),b=k<0?'':'.'+s.slice(k+1).replace(/\./g,'');
+  a=a.replace(/^0+(?=\d)/,'');
+  if(a.length>3)a=a.slice(0,-3).replace(/\B(?=(\d{2})+$)/g,',')+','+a.slice(-3);
+  return a+b;
+}
+function fmtAmt(el){
+  const v=el.value,c=el.selectionStart??v.length;
+  const before=v.slice(0,c).replace(/[^\d.]/g,'').length,out=inGroup(v);
+  el.value=out;
+  let p=0,n=0;while(p<out.length&&n<before){if(/[\d.]/.test(out[p]))n++;p++}
+  if(document.activeElement===el)el.setSelectionRange(p,p);
+}
+document.querySelectorAll('input.amt').forEach(el=>{fmtAmt(el);el.addEventListener('input',()=>fmtAmt(el))});
+function calc(){
+  const mode=$('mode').value,type=$('type').value;
+  $('g-dp').classList.toggle('hide',mode==='dp');
+  $('g-months').classList.toggle('hide',mode==='months');
+  $('g-emi').classList.toggle('hide',mode==='emi');
+  const price=num('price'),r=num('rate'),i=r/1200;
+  let dp=num('dp'),m=Math.round(num('months')),emi=num('emi'),L,err='';
+  const pow=Math.pow(1+i,m);
+  if(mode==='emi'){
+    L=price-dp;
+    if(L<=0||m<=0)err='Enter a valid DP and months';
+    else emi=type==='flat'?(L+L*r/100*m/12)/m:(i===0?L/m:L*i*pow/(pow-1));
+  }else if(mode==='months'){
+    L=price-dp;
+    if(L<=0||emi<=0)err='Enter a valid DP and EMI';
+    else if(type==='flat'){
+      const d=emi-L*r/1200;
+      if(d<=0)err='EMI is too low to ever repay this loan';else m=Math.ceil(L/d-1e-9);
+    }else if(i===0)m=Math.ceil(L/emi-1e-9);
+    else{
+      if(emi<=L*i)err='EMI is too low to ever repay this loan';
+      else m=Math.ceil(-Math.log(1-L*i/emi)/Math.log(1+i)-1e-9);
+    }
+  }else{
+    if(emi<=0||m<=0)err='Enter a valid EMI and months';
+    else{
+      L=type==='flat'?emi*m/(1+r*m/1200):(i===0?emi*m:emi*(pow-1)/(i*pow));
+      dp=price-L;
+      if(dp<0)err='EMI is too high: loan exceeds price (DP would be negative)';
+    }
+  }
+  $('err').textContent=$('price').value.trim()?err:'';
+  approval(err?null:{emi,L,price,m});LN=err?null:{L,emi,m,r,type};preclose();
+  if(err){['bigV','oDp','oLoan','oEmi','oMonths','oInt','oTot','eqV','dealV'].forEach(k=>$(k).textContent='–');$('dealN').textContent='';$('deal').className='deal okay';return;}
+  const total=emi*m,int=total-L;
+  const dpTxt=fmt(dp)+(price>0?' ('+(dp/price*100).toFixed(1)+'%)':'');
+  $('oDp').textContent=dpTxt;$('oLoan').textContent=fmt(L);$('oEmi').textContent=fmt(emi);
+  $('oMonths').textContent=m;$('oInt').textContent=fmt(int);$('oTot').textContent=fmt(total);
+  const big={emi:['EMI per month',fmt(emi)],months:['Number of months',m+' months'],dp:['Down payment needed',dpTxt]}[mode];
+  $('bigL').textContent=big[0];$('bigV').textContent=big[1];
+  // Equivalent rate: same loan, months and EMI
+  const flatEq=int/L/(m/12)*100, redEq=type==='flat'?reducingFor(L,emi,m):r;
+  const tag=fmt(L)+' over '+m+' months';
+  if(type==='reducing'){$('eqL').textContent=r+'% reducing balance on '+tag+' equals';$('eqV').textContent=flatEq.toFixed(2)+'% flat rate';}
+  else{$('eqL').textContent=r+'% flat rate on '+tag+' equals';$('eqV').textContent=redEq.toFixed(2)+'% reducing balance';}
+  // Deal rating, based on the effective (reducing) rate
+  curM=m;const d=rateDeal(redEq);
+  $('deal').className='deal '+d[0];$('dealV').textContent=d[1];
+  $('dealN').textContent='Effective rate '+redEq.toFixed(2)+'% p.a. (reducing). '+d[2];
+}
+// Find the reducing-balance annual rate that gives this EMI (bisection)
+function reducingFor(L,emi,m){
+  if(emi*m<=L)return 0;
+  const f=i=>{const p=Math.pow(1+i,m);return L*i*p/(p-1)};
+  let lo=1e-9,hi=1;
+  for(let k=0;k<100;k++){const mid=(lo+hi)/2;f(mid)<emi?lo=mid:hi=mid}
+  return (lo+hi)/2*1200;
+}
+const BANDS=[['Great',null,10],['Good',10,13],['Okay',13,17],['Bad',17,22],['Worse',22,null]];
+function flatFor(R,m){const i=R/1200,p=Math.pow(1+i,m),e=i?L0*i*p/(p-1):L0/m;return (e*m-L0)/L0/(m/12)*100}
+const L0=100000;let curM=12;
+function fillTip(){
+  const f=R=>flatFor(R,curM).toFixed(1)+'%',rg=(a,b,g)=>a==null?'≤ '+g(b):b==null?'> '+g(a):g(a)+'–'+g(b);
+  $('tipM').textContent=curM;
+  $('tipB').innerHTML=BANDS.map(([n,a,b])=>'<tr><td>'+n+'</td><td>'+rg(a,b,x=>x+'%')+'</td><td>'+rg(a,b,f)+'</td></tr>').join('');
+}
+function showTip(on){$('tip').classList.toggle('hide',!on);$('ib').setAttribute('aria-expanded',on);if(on)fillTip();}
+$('ib').addEventListener('click',e=>{e.stopPropagation();showTip($('tip').classList.contains('hide'))});
+$('tipX').addEventListener('click',()=>showTip(false));
+$('tip').addEventListener('click',e=>e.stopPropagation());
+document.addEventListener('click',()=>showTip(false));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')showTip(false)});
+// Typical Indian two-wheeler loan rates (reducing): banks ~9-14%, NBFCs/dealer finance ~14-24%+
+function rateDeal(R){
+  if(R<=10)return['great','Great','Lower than most bank two-wheeler loans.'];
+  if(R<=13)return['good','Good','In line with good bank rates.'];
+  if(R<=17)return['okay','Okay','Average, typical of NBFC or dealer finance.'];
+  if(R<=22)return['bad','Bad','Higher than usual. Compare other lenders.'];
+  return['worse','Worse','Very expensive. Try to negotiate or look elsewhere.'];
+}
+// ---- Loan approval odds ----
+// Points-based log-odds model modelled on Indian lender scorecards:
+// CIBIL score, credit history length (thin file), FOIR (all EMIs / income), LTV (loan / price),
+// income floor, age eligibility at start and at loan maturity, and tenure.
+function curve(x,pts){
+  if(x<=pts[0][0])return pts[0][1];
+  for(let k=1;k<pts.length;k++)if(x<=pts[k][0]){const[a,b]=pts[k-1],[c,d]=pts[k];return b+(d-b)*(x-a)/(c-a)}
+  return pts[pts.length-1][1];
+}
+// Lender presets: [name, min age, max age at loan end, min monthly income, min CIBIL, max LTV %, max tenure (months), max FOIR %, accepts no-credit-history (1/0), strictness shift, data quality]
+// Built from lenders' own pages and comparison sites (Nov 2026). FOIR caps, and anything marked Partly/Mostly assumed, are estimates: confirm with the lender.
+const LEND={
+ai:['Smart balanced (all-lender group)',21,65,12000,680,90,48,50,0,0.1,'Assumption: blend of banks and NBFCs'],
+sbi:['State Bank of India',21,65,10000,700,85,48,50,0,-0.2,'Partly published'],
+hdfc:['HDFC Bank',21,65,12000,700,85,48,50,0,-0.1,'Mostly assumed'],
+icici:['ICICI Bank',21,65,12000,700,90,36,50,0,-0.1,'Partly published'],
+axis:['Axis Bank',21,60,12000,700,100,48,50,0,-0.1,'Partly published'],
+bob:['Bank of Baroda',21,70,10000,700,85,48,50,0,-0.2,'Partly published'],
+pnb:['Punjab National Bank',18,65,10000,700,85,48,50,0,-0.2,'Partly published'],
+union:['Union Bank of India',18,75,10000,700,85,48,50,0,-0.2,'Mostly assumed'],
+idfc:['IDFC FIRST Bank',21,65,12000,700,90,48,50,0,0,'Partly published'],
+bajaj:['Bajaj Finance',18,70,8000,600,100,84,60,1,0.6,'Published (pages conflict on age)'],
+hero:['Hero FinCorp',18,65,10000,650,95,48,55,1,0.4,'Partly published'],
+lt:['L&T Finance',18,65,10000,650,100,48,55,1,0.4,'Partly published'],
+tvs:['TVS Credit',21,65,10000,650,95,48,55,1,0.3,'Partly published (18+ with guarantor)'],
+shriram:['Shriram Finance',21,60,10000,600,90,48,55,1,0.4,'Partly published'],
+muthoot:['Muthoot Capital',18,65,8000,600,100,48,60,1,0.6,'Published'],
+smfg:['SMFG India Credit',18,65,10000,650,90,48,55,1,0.3,'Partly assumed']};
+const GROUPS=[['Balanced',['ai']],['Banks',['sbi','hdfc','icici','axis','bob','pnb','union','idfc']],['NBFCs / finance companies',['bajaj','hero','lt','tvs','shriram','muthoot','smfg']]];
+$('lender').innerHTML=GROUPS.map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(k=>'<option value="'+k+'">'+LEND[k][0]+'</option>').join('')+'</optgroup>').join('');
+function lInfo(){const P=LEND[$('lender').value];if($('lender').value==='ai'){$('lInfo').textContent='Group estimate: your profile is checked against all 15 lender presets (NBFCs weighted higher). Use this when your lender is not listed.';return}$('lInfo').textContent='Min age '+P[1]+' · max age at end '+P[2]+' · income ₹'+P[3].toLocaleString('en-IN')+'+ · CIBIL '+P[4]+'+ · funds up to '+P[5]+'% · max '+P[6]+' months · EMIs ≤'+P[7]+'% of income · Data: '+P[10]}
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const LBL={age:'Your age',inc:'Income',cibil:'Credit score or history',foir:'EMI-to-income ratio',ltv:'Down payment is too small',ten:'Loan tenure',end:'Age at loan end',hist:'Short or no credit history'};
+const band=p=>p<45?['bad','Low']:p<70?['maybe','Maybe']:p<85?['good','Likely']:['great','High'];
+// Scores one lender preset. Shortfalls lower the cap gradually (small miss = small penalty).
+function evalP(P,o,u){
+  const{age,inc,obl,cibil,ntc,hist}=u,minAge=u.minAge||P[1];
+  const foir=(o.emi+obl)/inc*100,ltv=o.price>0?o.L/o.price*100:100,endAge=age+o.m/12;
+  let z=-0.2+P[9],cap=95,nf=0;const f=[],cats=[];
+  const add=(v,good,bad)=>{z+=v;if(v<=-0.4)f.push([v,bad]);else if(v>=0.6)f.push([v,good])};
+  const lim=(c,msg)=>{if(c<cap)cap=c;f.push([-5,msg])};
+  const bad=(k,c,msg)=>{nf++;cats.push(k);lim(Math.max(2,c),msg)};
+  if(ntc){cats.push('hist');if(P[8]){add(-0.7,'','New to credit: this lender may still lend, usually with a higher DP.');lim(55,'No credit history: approval is less certain.')}
+    else bad('cibil',15,'No credit history: '+P[0]+' usually expects a CIBIL score of '+P[4]+'+.')}
+  else{const d=cibil-P[4];
+    add(curve(d,[[-150,-4],[-60,-2.5],[-20,-1.2],[0,-0.1],[30,0.5],[80,1],[150,1.4]]),'CIBIL '+cibil+' is comfortably above the ~'+P[4]+' expected.','CIBIL '+cibil+' is below the ~'+P[4]+' this lender expects.');
+    if(d<-20)bad('cibil',Math.min(55,10+(d+80)*0.75),'CIBIL '+cibil+' is below the ~'+P[4]+' this lender expects.');
+    add(curve(hist,[[0,-1.2],[6,-0.9],[12,-0.5],[24,0],[60,0.3],[120,0.5]]),'Long credit history.','Short credit history (thin file).');
+    if(hist<12){cats.push('hist');lim(50+hist*3.5,'Credit history under a year: many lenders treat you as a thin file.')}}
+  const ir=inc/P[3];
+  add(curve(ir,[[0.6,-3],[1,-0.4],[1.3,0.1],[2,0.5],[4,0.8]]),'Income is comfortably above this lender\'s minimum.','Income is close to this lender\'s minimum.');
+  if(ir<1)bad('inc',Math.min(65,10+125*(ir-0.6)),'Income '+inr(inc)+' is below the ~'+inr(P[3])+' this lender typically expects.');
+  add(curve(P[7]-foir,[[-20,-4],[-5,-1.6],[0,-0.6],[10,0.2],[25,0.8],[40,1]]),'Low FOIR ('+foir.toFixed(0)+'% of income goes to EMIs).','High FOIR: '+foir.toFixed(0)+'% of income goes to EMIs (this lender allows about '+P[7]+'%).');
+  if(foir>P[7])bad('foir',50-(foir-P[7])*3,'EMIs take '+foir.toFixed(0)+'% of income; this lender allows about '+P[7]+'%.');
+  if(foir>=80)cap=Math.min(cap,5);
+  if(ltv>P[5])bad('ltv',55-(ltv-P[5])*3,'You want to finance '+ltv.toFixed(0)+'% of the price; this lender funds up to '+P[5]+'%. Raise your DP by about '+inr((ltv-P[5])/100*o.price)+'.');
+  else add(curve(P[5]-ltv,[[0,-0.3],[10,0.2],[30,0.6],[50,0.9]]),'Good down payment (LTV '+ltv.toFixed(0)+'%).','');
+  if(age<Math.max(18,minAge))bad('age',2,'You are '+age+'; this lender\'s minimum age is '+Math.max(18,minAge)+'.');
+  if(endAge>P[2])bad('end',30,'Age at loan end ('+endAge.toFixed(0)+') is above this lender\'s limit of '+P[2]+'.');
+  if(o.m>P[6])bad('ten',30,'Tenure of '+o.m+' months is above this lender\'s maximum of '+P[6]+'.');
+  if(((hist<12)+(ir<1.3)+(age<22))>=2)lim(65,'Several weak points together (young age, low income, short credit history).');
+  if(nf>=3)cap=Math.min(cap,5);else if(nf===2)cap=Math.min(cap,12);
+  const p=Math.max(1,Math.min(95,Math.min(100/(1+Math.exp(-z)),cap)));
+  return{p,nf,f,cats,foir,ltv};
+}
+function approval(o){
+  lInfo();
+  const box=$('ap'),list=[],key=$('lender').value,P=LEND[key];
+  const set=(cls,v,msg,note)=>{box.className='deal ap '+cls;$('apV').textContent=v;$('apM').textContent=msg;$('apN').textContent=note||'';$('apL').innerHTML=list.map(t=>'<li>'+t+'</li>').join('')};
+  const stop=m=>{$('bestV').textContent='–';$('bestN').textContent='';return set('okay','–','',m)};
+  if(!o)return stop('Fix the loan details above to see approval chances.');
+  const age=num('age'),inc=num('inc'),obl=num('oblig');
+  const cRaw=$('cibil').value.trim(),hist=Math.max(0,num('cY'))*12+Math.max(0,num('cM'));
+  if(age<=0||inc<=0)return stop('Enter your age and monthly income.');
+  const ntc=cRaw===''||hist===0;const cibil=parseFloat(cRaw);
+  if(!ntc&&(cibil<300||cibil>900||isNaN(cibil)))return stop('CIBIL score must be between 300 and 900.');
+  const u={age,inc,obl,cibil,ntc,hist,minAge:0};
+  const keys=Object.keys(LEND).filter(k=>k!=='ai'),N=keys.length;
+  const all=keys.map(k=>[k,evalP(LEND[k],o,u)]);
+  const top=[...all].sort((x,y)=>y[1].p-x[1].p).slice(0,3);
+  $('bestV').innerHTML=top.map(x=>LEND[x[0]][0]+': <b>'+Math.round(x[1].p)+'%</b>').join('<br>');
+  $('bestN').textContent=top[0][1].p<45?'No listed lender looks strong for this profile. A bigger DP, more credit history or a higher income would help.':'Based on the presets. Confirm with the lender before applying.';
+  const hard=' A rejection can leave a hard enquiry on your CIBIL, so confirm the lender\'s criteria first.';
+  if(key==='ai'){
+    let w=0,sm=0,lo=100,hi=0,n=0;const cnt={};
+    all.forEach(x=>{const r=x[1],wt=LEND[x[0]][8]?1.5:1;w+=wt;sm+=wt*r.p;lo=Math.min(lo,r.p);hi=Math.max(hi,r.p);if(r.p>=70)n++;r.cats.forEach(c=>cnt[c]=(cnt[c]||0)+1)});
+    const p=sm/w,bd=band(p),foir=all[0][1].foir,ltv=all[0][1].ltv;
+    Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,4).forEach(x=>list.push('▼ '+LBL[x[0]]+' is a problem at '+x[1]+' of '+N+' lenders.'));
+    if(!list.length)list.push('▲ Meets the typical rules of most lenders.');
+    return set(bd[0],Math.round(p)+'%',bd[1],'Group estimate across '+N+' lender presets (NBFCs weighted higher): '+n+' of '+N+' look likely, range '+Math.round(lo)+'–'+Math.round(hi)+'%. FOIR '+foir.toFixed(0)+'% · LTV '+ltv.toFixed(0)+'%. Estimate only.'+(p<70?hard:''));
+  }
+  const r=evalP(P,o,{...u,minAge:num('minAge')}),bd=band(r.p);
+  r.f.sort((x,y)=>Math.abs(y[0])-Math.abs(x[0]));
+  [...new Set(r.f.filter(x=>x[1]).map(x=>(x[0]<0?'▼ ':'▲ ')+x[1]))].slice(0,5).forEach(t=>list.push(t));
+  set(bd[0],Math.round(r.p)+'%',bd[1],(r.nf?'⚠ Your details do not meet '+P[0]+' requirements ('+r.nf+' issue'+(r.nf>1?'s':'')+'). ':'')+'FOIR '+r.foir.toFixed(0)+'% · LTV '+r.ltv.toFixed(0)+'% · Estimate only, each lender has its own rules.'+(r.p<70?hard:''));
+}
+let LN=null;
+function quote(){
+  const P=num('qPrice'),D=num('qDp'),E=num('qEmi'),M=Math.round(num('qM')),L=P-D,cl=$('qClaim').value;
+  const clear=m=>{['qL','qI','qF','qR','qT','qDv'].forEach(k=>$(k).textContent='–');$('qDn').textContent=m;$('qD').className='deal okay';$('qCl').textContent=''};
+  if(L<=0||E<=0||M<=0)return clear('Enter price, DP, EMI and months.');
+  if(E*M<=L)return clear('EMI × months is not more than the loan. Check the numbers.');
+  const T=E*M,I=T-L,F=I/L/(M/12)*100,R=reducingFor(L,E,M),d=rateDeal(R);
+  $('qL').textContent=fmt(L);$('qI').textContent=fmt(I);$('qT').textContent=fmt(T);
+  $('qF').textContent=F.toFixed(2)+'%';$('qR').textContent=R.toFixed(2)+'%';
+  $('qD').className='deal '+d[0];$('qDv').textContent=d[1];
+  $('qDn').textContent='Effective rate '+R.toFixed(2)+'% p.a. (reducing). '+d[2];
+  let t='';
+  if(cl!==''){const c=parseFloat(cl)||0;
+    if(Math.abs(c-R)<0.5)t='✔ The claimed '+c+'% matches the real reducing rate.';
+    else if(Math.abs(c-F)<0.5)t='⚠ The claimed '+c+'% is a FLAT rate. The real cost is '+R.toFixed(2)+'% reducing.';
+    else if(c<F)t='⚠ The claimed '+c+'% is lower than even the flat rate ('+F.toFixed(2)+'%). Likely hidden fees or extra charges: ask for a full breakdown.';
+    else t='The claimed '+c+'% does not match the numbers. Ask how the EMI was calculated.';}
+  $('qCl').textContent=t;
+}
+function preclose(){
+  const clear=m=>{['pcO','pcC','pcK','pcX','pcA','pcB','pcDv'].forEach(k=>$(k).textContent='–');$('pcD').className='deal okay';$('pcDn').textContent=m};
+  if(!LN)return clear('Fix the loan details at the top first.');
+  const{L,emi,m,r,type}=LN,k=Math.round(num('pcM')),i=r/1200;
+  if(k<1||k>=m)return clear('Pre-close month must be between 1 and '+(m-1)+'.');
+  const rem=m-k,pw=Math.pow(1+i,k);
+  const B=Math.max(0,type==='flat'?L*(m-k)/m:(i===0?L-emi*k:L*pw-emi*(pw-1)/i));
+  const ch=B*num('pcP')/100*(1+num('pcG')/100),keep=emi*m-L,pre=(emi*k-(L-B))+ch,P=B+ch;
+  const ret=num('pcR'),g=ret/1200,H=Math.max(rem,Math.round(num('pcH'))||rem),gf=n=>Math.pow(1+g,n);
+  let A=0,V=P*gf(H);
+  for(let t=1;t<=H;t++)A+=emi*gf(H-t);
+  for(let t=rem+1;t<=H;t++)V+=emi*gf(H-t);
+  const diff=A-V;
+  $('pcO').textContent=fmt(B);$('pcC').textContent=fmt(ch);$('pcK').textContent=fmt(keep);$('pcX').textContent=fmt(pre);
+  $('pcA').textContent=fmt(A);$('pcB').textContent=fmt(V);
+  const why=' Over '+H+' months'+(ret>0?', investing at '+ret+'% a year':'')+'. Without investing, pre-closing saves '+fmt(keep-pre)+' in interest.';
+  if(diff>0){$('pcD').className='deal great';$('pcDv').textContent='Pre-close';$('pcDn').textContent='Pre-closing after '+k+' months comes out about '+fmt(diff)+' ahead.'+why}
+  else{$('pcD').className='deal bad';$('pcDv').textContent='Keep paying';$('pcDn').textContent='Keeping the loan and investing the money comes out about '+fmt(-diff)+' ahead.'+why}
+}
+const KEY='emiwheels-v3',DEF={},FIELDS=[...document.querySelectorAll('input[id],select[id]')];
+FIELDS.forEach(e=>DEF[e.id]=e.value);
+function save(){try{const o={};FIELDS.forEach(e=>o[e.id]=e.value);localStorage.setItem(KEY,JSON.stringify(o))}catch(x){}}
+function refmt(){document.querySelectorAll('input.amt').forEach(e=>fmtAmt(e))}
+try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){FIELDS.forEach(e=>{if(e.id in o)e.value=o[e.id]});refmt()}}catch(x){}
+$('reset').addEventListener('click',()=>{FIELDS.forEach(e=>e.value=DEF[e.id]);try{localStorage.removeItem(KEY)}catch(x){}refmt();calc();quote();preclose()});
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',()=>{quote();preclose();save()}));
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));
+calc();quote();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+
+
+
+</body></html>
