@@ -43,7 +43,9 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
 .deal.okay{background:#fff;color:#14213d}
 .deal.good{background:#86efac;color:#052e16}
 .deal{position:relative}
-.ib{position:absolute;top:8px;right:8px;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid currentColor;background:transparent;color:inherit;font:italic 600 11px/16px Georgia,serif;opacity:.7;cursor:pointer}
+.ib{position:absolute;top:0;right:0;width:52px;height:52px;padding:0;border:0;background:transparent;color:inherit;opacity:.85;cursor:pointer;font-size:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.ib::before{content:"i";display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1.5px solid currentColor;font:italic 700 16px Georgia,serif}
+.ib:active::before{background:rgba(128,128,128,.3)}
 .ib:hover{opacity:1}
 .tip{position:absolute;bottom:calc(100% + 6px);right:0;z-index:5;width:250px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:12px}
 .tip table{width:100%;border-collapse:collapse;margin-top:4px}
