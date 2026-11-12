@@ -93,6 +93,7 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
     <div class="r"><small>Months</small><b id="oMonths">24</b></div>
     <div class="r"><small>Total interest</small><b id="oInt">₹19,818</b></div>
     <div class="r"><small>Total payable</small><b id="oTot">₹1,19,818</b></div>
+    <div class="r wide"><small>All-in cost (down payment + loan + interest)</small><b id="oAll">–</b><small id="oAllN"></small></div>
     <div class="r wide"><small id="eqL">Equivalent rate</small><b id="eqV">9.91% flat rate</b></div>
     <div id="deal" class="deal bad"><button type="button" class="ib" id="ib" aria-label="How the rating works" aria-expanded="false">i</button>
       <div class="tip hide" id="tip" role="dialog"><button type="button" class="x" id="tipX" aria-label="Close">×</button>
@@ -146,14 +147,14 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
   <div><label>Compare over (months)</label><input id="pcH" type="number" inputmode="numeric" placeholder="Until loan ends"></div></div>
   <p class="hint">Investing: instead of paying off the loan, you keep that money invested and carry on paying EMIs. Leave months empty to compare until the loan ends. Set return to 0 to ignore investing.</p>
   <div class="res" style="margin-top:12px">
-    <div class="r"><small>Outstanding loan then</small><b id="pcO">–</b></div>
-    <div class="r"><small>Charge incl. GST</small><b id="pcC">–</b></div>
-    <div class="r"><small>Interest if you keep paying</small><b id="pcK">–</b></div>
-    <div class="r"><small>Cost if you pre-close</small><b id="pcX">–</b></div>
-    <div class="r"><small>Pre-close: freed EMIs invested, value at end</small><b id="pcA">–</b></div>
-    <div class="r"><small>Keep paying: lump invested, value at end</small><b id="pcB">–</b></div>
-    <div id="pcD" class="deal okay"><small>Which is cheaper?</small><b id="pcDv">–</b><p id="pcDn"></p></div>
+    <div class="r wide"><small>To pre-close at that month you pay now</small><b id="pcPay">–</b><small id="pcPayN"></small></div>
+    <div class="r"><small>Interest you avoid by pre-closing</small><b id="pcRem">–</b></div>
+    <div class="r"><small>Pre-closure charge (with GST)</small><b id="pcC">–</b></div>
+    <div class="r wide"><small>Net saving from pre-closing (without investing)</small><b id="pcNet">–</b></div>
+    <div class="r wide"><small>Extra you would earn by investing that money instead</small><b id="pcInv">–</b><small id="pcInvN"></small></div>
+    <div id="pcD" class="deal okay"><small>Pre-close or keep paying?</small><b id="pcDv">–</b><p id="pcDn"></p></div>
   </div>
+  <p class="hint" id="pcBE"></p>
   <p class="hint">Investment returns are only an assumption (not guaranteed, tax ignored). Charge is applied on the outstanding principal. For flat-rate loans, principal is assumed to be repaid equally each month; your lender's formula may differ, so confirm the exact foreclosure amount.</p>
 </div>
 <p class="note">Total payable = loan + interest (excludes DP and fees)</p>
@@ -211,11 +212,11 @@ function calc(){
   }
   $('err').textContent=$('price').value.trim()?err:'';
   approval(err?null:{emi,L,price,m});LN=err?null:{L,emi,m,r,type};preclose();
-  if(err){['bigV','oDp','oLoan','oEmi','oMonths','oInt','oTot','eqV','dealV'].forEach(k=>$(k).textContent='–');$('dealN').textContent='';$('deal').className='deal okay';return;}
+  if(err){['bigV','oDp','oLoan','oEmi','oMonths','oInt','oTot','oAll','eqV','dealV'].forEach(k=>$(k).textContent='–');$('oAllN').textContent='';$('dealN').textContent='';$('deal').className='deal okay';return;}
   const total=emi*m,int=total-L;
   const dpTxt=fmt(dp)+(price>0?' ('+(dp/price*100).toFixed(1)+'%)':'');
   $('oDp').textContent=dpTxt;$('oLoan').textContent=fmt(L);$('oEmi').textContent=fmt(emi);
-  $('oMonths').textContent=m;$('oInt').textContent=fmt(int);$('oTot').textContent=fmt(total);
+  $('oMonths').textContent=m;$('oInt').textContent=fmt(int);$('oTot').textContent=fmt(total);$('oAll').textContent=fmt(dp+total);$('oAllN').textContent=fmt(dp)+' + '+fmt(L)+' + '+fmt(int);
   const big={emi:['EMI per month',fmt(emi)],months:['Number of months',m+' months'],dp:['Down payment needed',dpTxt]}[mode];
   $('bigL').textContent=big[0];$('bigV').textContent=big[1];
   // Equivalent rate: same loan, months and EMI
@@ -374,23 +375,31 @@ function quote(){
   $('qCl').textContent=t;
 }
 function preclose(){
-  const clear=m=>{['pcO','pcC','pcK','pcX','pcA','pcB','pcDv'].forEach(k=>$(k).textContent='–');$('pcD').className='deal okay';$('pcDn').textContent=m};
+  const money=n=>(n<0?'−':'')+fmt(Math.abs(n));
+  const clear=m=>{['pcPay','pcRem','pcC','pcNet','pcInv'].forEach(k=>$(k).textContent='–');['pcPayN','pcInvN','pcBE'].forEach(k=>$(k).textContent='');$('pcDv').textContent='–';$('pcD').className='deal okay';$('pcDn').textContent=m};
   if(!LN)return clear('Fix the loan details at the top first.');
   const{L,emi,m,r,type}=LN,k=Math.round(num('pcM')),i=r/1200;
   if(k<1||k>=m)return clear('Pre-close month must be between 1 and '+(m-1)+'.');
   const rem=m-k,pw=Math.pow(1+i,k);
   const B=Math.max(0,type==='flat'?L*(m-k)/m:(i===0?L-emi*k:L*pw-emi*(pw-1)/i));
-  const ch=B*num('pcP')/100*(1+num('pcG')/100),keep=emi*m-L,pre=(emi*k-(L-B))+ch,P=B+ch;
-  const ret=num('pcR'),g=ret/1200,H=Math.max(rem,Math.round(num('pcH'))||rem),gf=n=>Math.pow(1+g,n);
-  let A=0,V=P*gf(H);
-  for(let t=1;t<=H;t++)A+=emi*gf(H-t);
-  for(let t=rem+1;t<=H;t++)V+=emi*gf(H-t);
-  const diff=A-V;
-  $('pcO').textContent=fmt(B);$('pcC').textContent=fmt(ch);$('pcK').textContent=fmt(keep);$('pcX').textContent=fmt(pre);
-  $('pcA').textContent=fmt(A);$('pcB').textContent=fmt(V);
-  const why=' Over '+H+' months'+(ret>0?', investing at '+ret+'% a year':'')+'. Without investing, pre-closing saves '+fmt(keep-pre)+' in interest.';
-  if(diff>0){$('pcD').className='deal great';$('pcDv').textContent='Pre-close';$('pcDn').textContent='Pre-closing after '+k+' months comes out about '+fmt(diff)+' ahead.'+why}
-  else{$('pcD').className='deal bad';$('pcDv').textContent='Keep paying';$('pcDn').textContent='Keeping the loan and investing the money comes out about '+fmt(-diff)+' ahead.'+why}
+  const ch=B*num('pcP')/100*(1+num('pcG')/100),P=B+ch,remInt=emi*rem-B,net=remInt-ch;
+  const ret=num('pcR'),H=Math.max(rem,Math.round(num('pcH'))||rem);
+  // Both paths set aside the same cash each month. Pre-close: pay P now, invest the freed EMIs. Keep: invest P, pay the EMIs.
+  const dfn=a=>{const g=Math.pow(1+a/1200,1);let A=0;for(let t=1;t<=rem;t++)A+=emi*Math.pow(g,H-t);return A-P*Math.pow(g,H)};
+  const diff=dfn(ret),inv=net-diff,tol=Math.max(500,0.02*P);
+  $('pcPay').textContent=fmt(P);$('pcPayN').textContent=fmt(B)+' balance + '+fmt(ch)+' charge';
+  $('pcRem').textContent=fmt(remInt);$('pcC').textContent=fmt(ch);$('pcNet').textContent=money(net);
+  $('pcInv').textContent=ret>0?money(inv):'₹0';
+  $('pcInvN').textContent=ret>0?'If you invest the '+fmt(P)+' at '+ret+'% a year instead, over '+H+' months, after counting what the freed EMIs would earn.':'Return is set to 0, so investing is ignored.';
+  const sum='Net saving '+money(net)+' − investing advantage '+money(inv)+' = '+money(diff)+'.';
+  if(Math.abs(diff)<tol){$('pcD').className='deal okay';$('pcDv').textContent='Too close to call';$('pcDn').textContent='The gap is only '+fmt(Math.abs(diff))+', smaller than the uncertainty in the return you assumed. '+sum}
+  else if(diff>0){$('pcD').className='deal great';$('pcDv').textContent='Pre-close';$('pcDn').textContent='Pre-closing after '+k+' months comes out about '+fmt(diff)+' ahead. '+sum}
+  else{$('pcD').className='deal good';$('pcDv').textContent='Keep paying';$('pcDn').textContent='Keeping the loan and investing the money comes out about '+fmt(-diff)+' ahead. '+sum}
+  let be;
+  if(net<=0)be='Even at 0% returns, pre-closing does not beat keeping the loan: the charge is bigger than the interest you would avoid.';
+  else if(dfn(60)>0)be='Pre-closing wins even if your alternative earns up to 60% a year.';
+  else{let lo=0,hi=60;for(let x=0;x<40;x++){const mid=(lo+hi)/2;if(dfn(mid)>0)lo=mid;else hi=mid}be='Break-even: pre-closing wins if your alternative earns less than about '+((lo+hi)/2).toFixed(1)+'% a year.'}
+  $('pcBE').textContent=(remInt>0?'The charge takes '+Math.round(ch/remInt*100)+'% of the '+fmt(remInt)+' interest you would avoid. ':'')+be;
 }
 const KEY='emiwheels-v3',DEF={},FIELDS=[...document.querySelectorAll('input[id],select[id]')];
 FIELDS.forEach(e=>DEF[e.id]=e.value);
