@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<title>Loan Calculator</title>
+<title>Emi Wheels</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2563eb">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Loan Calc">
+<meta name="apple-mobile-web-app-title" content="Emi Wheels">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 --bg:#f4f6fb;--card:#fff;--text:#14213d;--muted:#667085;--line:#e3e7ef;--accent:#2563eb;--accent-text:#fff;--soft:#eaf1ff;color-scheme:light}
@@ -59,10 +59,15 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
 .ap ul li{margin:2px 0}
 .hint{font-size:11px;color:var(--muted);margin:3px 0 0}
 .rst{width:100%;margin:12px 0 24px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
+details.card>summary{font-weight:700;font-size:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"▾";color:var(--muted)}
+details.card[open]>summary::after{content:"▴"}
+details.card[open]>summary{margin-bottom:10px}
 </style>
 </head>
 <body>
-<h1>Loan Calculator</h1>
+<h1>Emi Wheels</h1>
 <div class="card">
   <label>Find</label>
   <select id="mode">
@@ -120,9 +125,10 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
     <div id="qD" class="deal okay"><small>Is the dealer's quote good?</small><b id="qDv">–</b><p id="qDn"></p></div>
   </div>
   <p class="hint" id="qCl"></p>
+  <div id="qFraud" class="deal bad hide"><b>🚨 Fraud Alert</b><p id="qFraudN"></p></div>
 </div>
-<div class="card">
-  <b style="font-size:15px">Loan approval chances</b>
+<details class="card">
+  <summary>Loan approval chances</summary>
   <label>Lender preset</label>
   <select id="lender"></select>
   <p class="hint" id="lInfo"></p>
@@ -136,9 +142,9 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
   <div class="row"><input id="cY" type="number" inputmode="numeric" placeholder="Years" aria-label="Years"><input id="cM" type="number" inputmode="numeric" placeholder="Months" aria-label="Months"></div>
   <div style="margin-top:12px" id="ap" class="deal ap good"><small>Approval chances</small><b id="apV">76%</b><span class="m" id="apM">Yes</span><p id="apN">FOIR 50% · LTV 67% · Estimate only, each lender has its own rules.</p><ul id="apL"><li>▲ Strong CIBIL score (784).</li><li>▼ Income is near the minimum many lenders accept.</li><li>▲ Good down payment (LTV 67%).</li><li>▼ Short credit history (thin file).</li></ul></div>
   <div class="r wide" style="margin-top:10px"><small>Best chances for your profile</small><div id="bestV" style="font-size:15px;margin-top:4px">–</div><p class="hint" id="bestN"></p></div>
-</div>
-<div class="card">
-  <b style="font-size:15px">Pre-closure: close early or keep paying?</b>
+</details>
+<details class="card">
+  <summary>Pre-closure: close early or keep paying?</summary>
   <p class="hint">Uses the loan from the calculator at the top (loan, EMI, months, rate).</p>
   <div class="row"><div><label>Pre-closure charge (%)</label><input id="pcP" placeholder="e.g. 4" type="number" inputmode="decimal"></div>
   <div><label>GST on the charge (%)</label><input id="pcG" type="number" inputmode="decimal" value="18"></div></div>
@@ -156,7 +162,7 @@ input,select{width:100%;font-size:17px;padding:11px 12px;border-radius:10px;bord
   </div>
   <p class="hint" id="pcBE"></p>
   <p class="hint">Investment returns are only an assumption (not guaranteed, tax ignored). Charge is applied on the outstanding principal. For flat-rate loans, principal is assumed to be repaid equally each month; your lender's formula may differ, so confirm the exact foreclosure amount.</p>
-</div>
+</details>
 <p class="note">Total payable = loan + interest (excludes DP and fees)</p>
 <button id="reset" type="button" class="rst">Reset all amounts</button>
 <script>
@@ -358,7 +364,7 @@ function approval(o){
 let LN=null;
 function quote(){
   const P=num('qPrice'),D=num('qDp'),E=num('qEmi'),M=Math.round(num('qM')),L=P-D,cl=$('qClaim').value;
-  const clear=m=>{['qL','qI','qF','qR','qT','qDv'].forEach(k=>$(k).textContent='–');$('qDn').textContent=m;$('qD').className='deal okay';$('qCl').textContent=''};
+  const clear=m=>{['qL','qI','qF','qR','qT','qDv'].forEach(k=>$(k).textContent='–');$('qDn').textContent=m;$('qD').className='deal okay';$('qCl').textContent='';$('qFraud').classList.add('hide')};
   if(L<=0||E<=0||M<=0)return clear('Enter price, DP, EMI and months.');
   if(E*M<=L)return clear('EMI × months is not more than the loan. Check the numbers.');
   const T=E*M,I=T-L,F=I/L/(M/12)*100,R=reducingFor(L,E,M),d=rateDeal(R);
@@ -373,6 +379,9 @@ function quote(){
     else if(c<F)t='⚠ The claimed '+c+'% is lower than even the flat rate ('+F.toFixed(2)+'%). Likely hidden fees or extra charges: ask for a full breakdown.';
     else t='The claimed '+c+'% does not match the numbers. Ask how the EMI was calculated.';}
   $('qCl').textContent=t;
+  const c2=parseFloat(cl)||0,gap=F-c2,fa=cl!==''&&gap>=2;
+  $('qFraud').classList.toggle('hide',!fa);
+  if(fa)$('qFraudN').textContent='The dealer claims '+c2+'% but the numbers on the paper give an actual flat rate of '+F.toFixed(2)+'% ('+gap.toFixed(1)+' points higher). Extra fees or a bigger loan amount may be hidden. Ask for a written breakdown before agreeing.';
 }
 function preclose(){
   const money=n=>(n<0?'−':'')+fmt(Math.abs(n));
